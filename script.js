@@ -8,10 +8,15 @@
   const music = document.getElementById("birthday-music");
   const musicToggle = document.getElementById("music-toggle");
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let musicState = "paused";
+  let playAttempt = 0;
 
-  function safeMusicState(label) {
+  function setMusicState(state, label) {
+    musicState = state;
     const labelNode = musicToggle.querySelector(".music-label");
     musicToggle.setAttribute("aria-label", label);
+    musicToggle.setAttribute("aria-pressed", String(state === "playing"));
+    musicToggle.dataset.state = state;
     labelNode.textContent = label;
   }
 
@@ -134,45 +139,64 @@
   musicToggle.addEventListener("click", async () => {
     if (!music || !musicToggle) return;
 
-    if (!music.paused) {
+    if (musicState === "loading" || musicState === "playing") {
+      playAttempt += 1;
       music.pause();
-      musicToggle.setAttribute("aria-pressed", "false");
-      safeMusicState("Afreen Afreen · paused");
+      setMusicState("paused", "A little music");
       return;
     }
 
+    const attempt = ++playAttempt;
+    setMusicState("loading", "Loading music…");
     try {
       await music.play();
-      musicToggle.setAttribute("aria-pressed", "true");
-      safeMusicState("Afreen Afreen · playing");
+      if (attempt === playAttempt) {
+        setMusicState("playing", "Afreen Afreen · playing");
+      }
     } catch (error) {
-      musicToggle.setAttribute("aria-pressed", "false");
-      safeMusicState("Add music.mp3");
+      if (attempt === playAttempt) {
+        setMusicState("error", "Music unavailable · try again");
+        console.error("Birthday music could not be played.", error);
+      }
     }
   });
 
   music.addEventListener("error", () => {
-    if (!music.paused) return;
-    safeMusicState("Add music.mp3");
-    musicToggle.setAttribute("aria-pressed", "false");
+    if (musicState !== "paused") {
+      setMusicState("error", "Music unavailable · try again");
+    }
   });
 
   music.addEventListener("pause", () => {
     if (music.ended) return;
-    musicToggle.setAttribute("aria-pressed", "false");
-    safeMusicState("Afreen Afreen · paused");
+    if (musicState !== "error" && musicState !== "paused") {
+      setMusicState("paused", "A little music");
+    }
   });
 
   music.addEventListener("play", () => {
-    musicToggle.setAttribute("aria-pressed", "true");
-    safeMusicState("Afreen Afreen · playing");
+    if (!music.paused && musicState !== "paused" && musicState !== "error") {
+      setMusicState("loading", "Loading music…");
+    }
   });
 
-  if (music && music.error) {
-    safeMusicState("Add music.mp3");
-  } else {
-    safeMusicState("Afreen Afreen · paused");
-  }
+  music.addEventListener("playing", () => {
+    if (!music.paused && musicState !== "paused" && musicState !== "error") {
+      setMusicState("playing", "Afreen Afreen · playing");
+    }
+  });
+
+  music.addEventListener("waiting", () => {
+    if (!music.paused && musicState !== "paused" && musicState !== "error") {
+      setMusicState("loading", "Loading music…");
+    }
+  });
+
+  music.addEventListener("ended", () => {
+    setMusicState("paused", "A little music");
+  });
+
+  setMusicState("paused", "A little music");
 
   document.querySelectorAll(".photo-frame img").forEach((image) => {
     image.addEventListener("error", () => image.classList.add("image-missing"), { once: true });
