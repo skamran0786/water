@@ -121,7 +121,7 @@
       : inKolkata.year;
     const targetUtcMs = Date.UTC(targetYear, 10, 14) - offsetMinutes * 60 * 1000;
     const remaining = Math.max(0, targetUtcMs - now.getTime());
-    const totalSeconds = Math.floor(remaining / 1000);
+    const totalSeconds = Math.ceil(remaining / 1000);
     const days = Math.floor(totalSeconds / 86400);
     const hours = Math.floor((totalSeconds % 86400) / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -151,7 +151,7 @@
     try {
       await music.play();
       if (attempt === playAttempt) {
-        setMusicState("playing", "Afreen Afreen · playing");
+        setMusicState("playing", "Music playing");
       }
     } catch (error) {
       if (attempt === playAttempt) {
@@ -182,7 +182,7 @@
 
   music.addEventListener("playing", () => {
     if (!music.paused && musicState !== "paused" && musicState !== "error") {
-      setMusicState("playing", "Afreen Afreen · playing");
+      setMusicState("playing", "Music playing");
     }
   });
 
